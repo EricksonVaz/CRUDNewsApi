@@ -33,7 +33,9 @@ namespace CRUDNewsApi.Services
         {
             var user = getUserByEmail(login.Email);
 
-            if(!BCrypt.Net.BCrypt.Verify(login.Password, user.PasswordHash))
+            if(user.Status == EStatus.Active)
+                throw new BadRequestException($"This User is {user.Status}, please check your email for instructions or contact support");
+            if (!BCrypt.Net.BCrypt.Verify(login.Password, user.PasswordHash))
                 throw new BadRequestException("Username or password is incorrect");
 
             // authentication successful
@@ -44,7 +46,28 @@ namespace CRUDNewsApi.Services
 
         public void Signup(Signup signup)
         {
-            throw new NotImplementedException();
+            var userFound = getUserByEmail(signup.Email);
+
+            if (userFound != null) throw new BadRequestException($"A user with {signup.Email} email already exists");
+
+            // map model to new user object
+            var user = _mapper.Map<User>(signup);
+
+            try
+            {
+                // hash password
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(signup.Password);
+                user.Roles = ERoles.User;
+                user.Status = EStatus.Inactive;
+
+                // save user
+                _context.Users.Add(user);
+                _context.SaveChanges();
+            }
+            catch(Exception e)
+            {
+                throw new Exception(e.Message);
+            }
         }
         public void ChangePassword(ResetPassword resetPassword)
         {

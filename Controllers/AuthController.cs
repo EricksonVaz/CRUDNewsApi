@@ -34,5 +34,10 @@ namespace CRUDNewsApi.Controllers
             var response = _authService.Login(login);
             return Ok(response);
         }
+
+        public IActionResult Signup(Signup signup)
+        {
+
+        }
     }
 }

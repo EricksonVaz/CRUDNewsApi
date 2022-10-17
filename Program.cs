@@ -1,4 +1,6 @@
 using CRUDNewsApi.Helpers;
+using CRUDNewsApi.Models;
+using CRUDNewsApi.Services;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddCors();
+// Add services to the container.
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.AddControllers().AddJsonOptions(x =>
 {
     // serialize enums as strings in api responses (e.g. Role)
@@ -14,6 +18,7 @@ builder.Services.AddControllers().AddJsonOptions(x =>
     // ignore omitted parameters on models to enable optional params (e.g. User update)
     x.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
+builder.Services.AddSingleton<IEmailSender, EmailSenderService>();
 // configure automapper with all automapper profiles from this assembly
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
