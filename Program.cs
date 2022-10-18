@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
+builder.Services.AddDbContext<DataContext>();
 builder.Services.AddCors();
 // Add services to the container.
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
@@ -18,7 +18,11 @@ builder.Services.AddControllers().AddJsonOptions(x =>
     // ignore omitted parameters on models to enable optional params (e.g. User update)
     x.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IEmailSender, EmailSenderService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+//builder.Services.AddScoped<IHttpContextAccessor, HttpContextAccessor>();
 // configure automapper with all automapper profiles from this assembly
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 

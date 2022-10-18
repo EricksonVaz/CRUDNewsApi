@@ -17,12 +17,12 @@ namespace CRUDNewsApi.Services
         {
             _smtpSettings = smtpSettings.Value;
         }
-        public async Task<bool> SendEmailAsync(string recipientEmail, string recipientFirstName, string htmlBody)
+        public async Task<bool> SendEmailAsync(string recipientEmail, string subject, string htmlBody)
         {
             var message = new MimeMessage();
             message.From.Add(MailboxAddress.Parse(_smtpSettings.SenderEmail));
             message.To.Add(MailboxAddress.Parse(recipientEmail));
-            message.Subject = "Enviar um Email simples";
+            message.Subject = subject;
             message.Body = new TextPart(TextFormat.Html)
             {
                 Text = htmlBody

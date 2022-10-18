@@ -35,9 +35,20 @@ namespace CRUDNewsApi.Controllers
             return Ok(response);
         }
 
-        public IActionResult Signup(Signup signup)
+        [HttpPost("signup")]
+        public async Task<IActionResult> Signup(Signup signup)
         {
+            var response = await _authService.Signup(signup);
 
+            if (response)
+            {
+                StatusCode(201);
+                return new ObjectResult(new { message = "Account registered successfully check your email to activate it" });
+            }
+                
+
+            StatusCode(500);
+            return new ObjectResult( new {message = "Error sending activation email, contact support to activate account" });
         }
     }
 }

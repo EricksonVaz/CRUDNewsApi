@@ -3,6 +3,7 @@ using System;
 using CRUDNewsApi.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CRUDNewsApi.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20221017222748_AllowNullValueInPasswordResetToken")]
+    partial class AllowNullValueInPasswordResetToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -148,6 +150,7 @@ namespace CRUDNewsApi.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("Photo")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<int>("Roles")

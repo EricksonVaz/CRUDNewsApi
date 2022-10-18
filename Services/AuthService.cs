@@ -4,13 +4,14 @@ using CRUDNewsApi.Helpers;
 using CRUDNewsApi.Helpers.Exceptions;
 using NotImplementedException = CRUDNewsApi.Helpers.Exceptions.NotImplementedException;
 using CRUDNewsApi.Models.Auth;
+using CRUDNewsApi.Helpers.EmailsTemplates;
 
 namespace CRUDNewsApi.Services
 {
     public interface IAuthService
     {
         AuthenticateResponse Login(Login login);
-        void Signup(Signup signup);
+        Task<bool> Signup(Signup signup);
         void ForgotPassword(ResetPasswordRequest resetPasswordRequest);
         void ChangePassword(ResetPassword resetPassword);
     }
@@ -19,15 +20,21 @@ namespace CRUDNewsApi.Services
         private DataContext _context;
         private IJwtUtils _jwtUtils;
         private readonly IMapper _mapper;
+        private readonly IEmailSender _emailSender;
+        private readonly IHttpContextAccessor _httpContext;
 
         public AuthService(
             DataContext context,
             IJwtUtils jwtUtils,
-            IMapper mapper)
+            IMapper mapper,
+            IEmailSender emailSender,
+            IHttpContextAccessor httpContext)
         {
             _context = context;
             _jwtUtils = jwtUtils;
             _mapper = mapper;
+            _emailSender = emailSender;
+            _httpContext = httpContext;
         }
         public AuthenticateResponse Login(Login login)
         {
@@ -44,11 +51,11 @@ namespace CRUDNewsApi.Services
             return response;
         }
 
-        public void Signup(Signup signup)
+        public Task<bool> Signup(Signup signup)
         {
-            var userFound = getUserByEmail(signup.Email);
 
-            if (userFound != null) throw new BadRequestException($"A user with {signup.Email} email already exists");
+            if (_context.Users.Any(x => x.Email == signup.Email)) 
+                throw new BadRequestException($"A user with {signup.Email} email already exists");
 
             // map model to new user object
             var user = _mapper.Map<User>(signup);
@@ -63,10 +70,12 @@ namespace CRUDNewsApi.Services
                 // save user
                 _context.Users.Add(user);
                 _context.SaveChanges();
+
+                return _emailSender.SendEmailAsync(user.Email, "User Registration", RegisteredUser.composeHTML(user.FirstName, _httpContext));
             }
             catch(Exception e)
             {
-                throw new Exception(e.Message);
+                throw new Exception(e.InnerException.Message);
             }
         }
         public void ChangePassword(ResetPassword resetPassword)

@@ -5,14 +5,14 @@ namespace CRUDNewsApi.Entities
     public class User
     {
         public int Id { get; set; }
-        public string Photo { get; set; }
+        public string? Photo { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Email { get; set; }
         [JsonIgnore]
         public string PasswordHash { get; set; }
         [JsonIgnore]
-        public string PasswordResetToken { get; set; }
+        public string? PasswordResetToken { get; set; }
         public ERoles Roles { get; set; }
         public EStatus Status { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.Now;
