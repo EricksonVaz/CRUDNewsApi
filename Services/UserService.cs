@@ -8,7 +8,7 @@ namespace CRUDNewsApi.Services
 {
     public interface IUserService
     {
-        IEnumerable<User> GetAll();
+        IEnumerable<User> GetAll(int userLoggedId);
         User GetById(int id);
         void Register(RegisterRequest model);
         void Update(int id, UpdateRequest model);
@@ -48,9 +48,9 @@ namespace CRUDNewsApi.Services
             throw new NotImplementedException();
         }
 
-        public IEnumerable<User> GetAll()
+        public IEnumerable<User> GetAll(int userLogged)
         {
-            throw new NotImplementedException();
+            return _context.Users.Where(x=>x.Id!= userLogged);
         }
 
         public User GetById(int id)
