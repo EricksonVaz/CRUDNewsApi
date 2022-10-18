@@ -3,8 +3,11 @@ using CRUDNewsApi.Entities;
 using CRUDNewsApi.Helpers;
 using CRUDNewsApi.Helpers.Exceptions;
 using NotImplementedException = CRUDNewsApi.Helpers.Exceptions.NotImplementedException;
+using KeyNotFoundException = CRUDNewsApi.Helpers.Exceptions.KeyNotFoundException;
 using CRUDNewsApi.Models.Auth;
 using CRUDNewsApi.Helpers.EmailsTemplates;
+using System;
+using Microsoft.OpenApi.Any;
 
 namespace CRUDNewsApi.Services
 {
@@ -12,7 +15,8 @@ namespace CRUDNewsApi.Services
     {
         AuthenticateResponse Login(Login login);
         Task<bool> Signup(Signup signup);
-        void ForgotPassword(ResetPasswordRequest resetPasswordRequest);
+        void ActivateAccount(string uuid);
+        Task<object> ForgotPassword(ResetPasswordRequest resetPasswordRequest);
         void ChangePassword(ResetPassword resetPassword);
     }
     public class AuthService : IAuthService
@@ -40,7 +44,7 @@ namespace CRUDNewsApi.Services
         {
             var user = getUserByEmail(login.Email);
 
-            if(user.Status == EStatus.Active)
+            if(user.Status != EStatus.Active)
                 throw new BadRequestException($"This User is {user.Status}, please check your email for instructions or contact support");
             if (!BCrypt.Net.BCrypt.Verify(login.Password, user.PasswordHash))
                 throw new BadRequestException("Username or password is incorrect");
@@ -66,26 +70,66 @@ namespace CRUDNewsApi.Services
                 user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(signup.Password);
                 user.Roles = ERoles.User;
                 user.Status = EStatus.Inactive;
+                user.Uuid = Guid.NewGuid();
 
                 // save user
                 _context.Users.Add(user);
                 _context.SaveChanges();
 
-                return _emailSender.SendEmailAsync(user.Email, "User Registration", RegisteredUser.composeHTML(user.FirstName, _httpContext));
+                return _emailSender.SendEmailAsync(user.Email, "User Registration", RegisteredUser.composeHTML(user, _httpContext));
             }
             catch(Exception e)
             {
                 throw new Exception(e.InnerException.Message);
             }
         }
-        public void ChangePassword(ResetPassword resetPassword)
+
+        public void ActivateAccount(string uuid)
         {
-            throw new NotImplementedException();
+            if (!_context.Users.Any(x => x.Uuid.ToString() == uuid && x.Status == EStatus.Inactive))
+                throw new KeyNotFoundException("User not Found");
+
+            var user = _context.Users.SingleOrDefault(x => x.Uuid == Guid.Parse(uuid));
+            user.Status = EStatus.Active;
+            _context.Users.Update(user);
+            _context.SaveChanges();
+
         }
 
-        public void ForgotPassword(ResetPasswordRequest resetPasswordRequest)
+        public async Task<object> ForgotPassword(ResetPasswordRequest resetPasswordRequest)
         {
-            throw new NotImplementedException();
+            if (!_context.Users.Any(x => x.Email == resetPasswordRequest.Email && x.Status == EStatus.Active))
+                return new KeyNotFoundException("User not Found");
+
+            var user = _context.Users.SingleOrDefault(x => x.Email == resetPasswordRequest.Email);
+            user.PasswordResetToken = Guid.NewGuid().ToString();
+            _context.Users.Update(user);
+            _context.SaveChanges();
+
+            var emailSend = await _emailSender.SendEmailAsync(user.Email, "Recover Password", RecoverPassword.composeHTML(user, _httpContext));
+
+            if (emailSend) return user;
+
+            return "Error sending email, contact support to recover your password";//throw new Exception("Error sending email, contact support to recover your password");
+        }
+
+        public void ChangePassword(ResetPassword resetPassword)
+        {
+            if (!_context.Users.Any(x => x.PasswordResetToken == resetPassword.PasswordResetToken))
+                throw new KeyNotFoundException("User not Found");
+
+            try
+            {
+                var user = _context.Users.SingleOrDefault(x => x.PasswordResetToken == resetPassword.PasswordResetToken);
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(resetPassword.Password);
+                user.PasswordResetToken = null;
+                _context.Users.Update(user);
+                _context.SaveChanges();
+            }
+            catch(Exception e)
+            {
+                throw new Exception(e.InnerException.Message);
+            }
         }
 
         private User getUserByEmail(string email)

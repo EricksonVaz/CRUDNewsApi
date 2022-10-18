@@ -1,10 +1,14 @@
-﻿using System.Text.Json.Serialization;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Security.Policy;
+using System.Text.Json.Serialization;
 
 namespace CRUDNewsApi.Entities
 {
+    [Index(nameof(Uuid), IsUnique = true)]
     public class User
     {
         public int Id { get; set; }
+        public Guid? Uuid { get; set; }
         public string? Photo { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
