@@ -4,7 +4,6 @@ using CRUDNewsApi.Helpers.Exceptions;
 using KeyNotFoundException = CRUDNewsApi.Helpers.Exceptions.KeyNotFoundException;
 using CRUDNewsApi.Models.Auth;
 using CRUDNewsApi.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -73,6 +72,17 @@ namespace CRUDNewsApi.Controllers
             var response = await _authService.ForgotPassword(model);
             if (response is KeyNotFoundException) throw (KeyNotFoundException)response;
             else if (response is User) return Ok(new { message = "Email sent, follow the instructions to recover your password" });
+
+            else throw new Exception((string?)response);
+
+        }
+
+        [HttpPost("resend-activation-email")]
+        public async Task<IActionResult> ResendEmail(ResetPasswordRequest model)
+        {
+            var response = await _authService.ResendEmail(model);
+            if (response is KeyNotFoundException) throw (KeyNotFoundException)response;
+            else if (response is User) return Ok(new { message = "Email sent, follow the instructions to activate your account" });
 
             else throw new Exception((string?)response);
 

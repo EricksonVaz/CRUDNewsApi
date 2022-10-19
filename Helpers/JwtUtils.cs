@@ -30,7 +30,7 @@ namespace CRUDNewsApi.Helpers
             {
                 Subject = new ClaimsIdentity(new[] { 
                     new Claim("id", user.Id.ToString()),
-                    new Claim(ClaimTypes.Name, user.FirstName), // User.Identity.Name
+                    new Claim("Username", user.FirstName), // User.Identity.Name
                     new Claim(ClaimTypes.Role, User.DecodeRoles(user.Roles)) // User.IsInRole(values...)
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),

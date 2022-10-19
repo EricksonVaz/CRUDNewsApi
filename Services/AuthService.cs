@@ -17,6 +17,7 @@ namespace CRUDNewsApi.Services
         Task<bool> Signup(Signup signup);
         void ActivateAccount(string uuid);
         Task<object> ForgotPassword(ResetPasswordRequest resetPasswordRequest);
+        Task<object> ResendEmail(ResetPasswordRequest resetPasswordRequest);
         void ChangePassword(ResetPassword resetPassword);
     }
     public class AuthService : IAuthService
@@ -111,6 +112,23 @@ namespace CRUDNewsApi.Services
             if (emailSend) return user;
 
             return "Error sending email, contact support to recover your password";//throw new Exception("Error sending email, contact support to recover your password");
+        }
+
+        public async Task<object> ResendEmail(ResetPasswordRequest resetPasswordRequest)
+        {
+            if (!_context.Users.Any(x => x.Email == resetPasswordRequest.Email && x.Status == EStatus.Inactive))
+                return new KeyNotFoundException("User not Found");
+
+            var user = _context.Users.SingleOrDefault(x => x.Email == resetPasswordRequest.Email);
+            user.Uuid = Guid.NewGuid();
+            _context.Users.Update(user);
+            _context.SaveChanges();
+
+            var emailSend = await _emailSender.SendEmailAsync(user.Email, "Activate Account", RegisteredUser.composeHTML(user, _httpContext));
+
+            if (emailSend) return user;
+
+            return "Error sending email, contact support to activate your account";//throw new Exception("Error sending email, contact support to recover your password");
         }
 
         public void ChangePassword(ResetPassword resetPassword)

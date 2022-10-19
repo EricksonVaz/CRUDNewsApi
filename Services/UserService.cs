@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using CRUDNewsApi.Entities;
 using CRUDNewsApi.Helpers;
+using CRUDNewsApi.Helpers.Pagination;
 using CRUDNewsApi.Models.User;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,7 @@ namespace CRUDNewsApi.Services
 {
     public interface IUserService
     {
-        IEnumerable<User> GetAll(int userLoggedId);
+        PagedList<User> GetAll(int idUserLogged, UserPaginationParams paginationParameters);
         User GetById(int id);
         void Register(RegisterRequest model);
         void Update(int id, UpdateRequest model);
@@ -48,9 +49,39 @@ namespace CRUDNewsApi.Services
             throw new NotImplementedException();
         }
 
-        public IEnumerable<User> GetAll(int userLogged)
+        public PagedList<User> GetAll(int userLogged,UserPaginationParams pagination)
         {
-            return _context.Users.Where(x=>x.Id!= userLogged);
+            if(pagination.Status != null && pagination.Roles != null)
+                return PagedList<User>.ToPagedList(
+                    _context.Set<User>()
+                    .Where(x => (x.Roles == pagination.Roles && x.Status == pagination.Status) && x.Id != userLogged)
+                    .OrderBy(u => u.FirstName),
+                    pagination.PageNumber,
+                    pagination.PageSize
+                );
+            else if(pagination.Status != null)
+                return PagedList<User>.ToPagedList(
+                    _context.Set<User>()
+                    .Where(x => x.Status == pagination.Status && x.Id != userLogged)
+                    .OrderBy(u => u.FirstName),
+                    pagination.PageNumber,
+                    pagination.PageSize
+                );
+            else if(pagination.Roles != null)
+                return PagedList<User>.ToPagedList(
+                    _context.Set<User>()
+                    .Where(x => x.Roles == pagination.Roles && x.Id != userLogged)
+                    .OrderBy(u => u.FirstName),
+                    pagination.PageNumber,
+                    pagination.PageSize
+                );
+            return PagedList<User>.ToPagedList(
+                _context.Set<User>()
+                .Where(x => x.Id != userLogged)
+                .OrderBy(u => u.FirstName),
+                pagination.PageNumber,
+                pagination.PageSize
+            );
         }
 
         public User GetById(int id)

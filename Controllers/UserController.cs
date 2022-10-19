@@ -1,16 +1,14 @@
 ﻿using AutoMapper;
+using CRUDNewsApi.Entities;
 using CRUDNewsApi.Helpers;
+using CRUDNewsApi.Helpers.Pagination;
 using CRUDNewsApi.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using System.Security.Claims;
+using Newtonsoft.Json;
 
 namespace CRUDNewsApi.Controllers
 {
-    [Authorize]
-    [Route("api/user")]
+    [Route("api/v1/user")]
     [ApiController]
     public class UserController : ControllerBase
     {
@@ -28,12 +26,26 @@ namespace CRUDNewsApi.Controllers
             _httpContextAccessor = httpContextAccessor;
         }
 
+        [Authorize(ERoles.Admin)]
         [HttpGet("")]
-        public IActionResult GetAll()
+        public IActionResult GetAll([FromQuery]UserPaginationParams pagination)
         {
-            var identity = HttpContext.User.Identity as ClaimsIdentity;
-            //var users = _userService.GetAllidentity.Id as Clam);
-            return Ok(identity);
+            var identity = (User)HttpContext.Items["User"];
+            var users = _userService.GetAll(identity.Id,pagination);
+
+            var metadata = new
+            {
+                users.TotalCount,
+                users.PageSize,
+                users.CurrentPage,
+                users.TotalPages,
+                users.HasNext,
+                users.HasPrevious
+            };
+
+            //Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(metadata));
+
+            return Ok(new {pagination = metadata, data = users});
         }
     }
 }
