@@ -15,6 +15,8 @@ namespace CRUDNewsApi.Models.User
         [Required]
         [MinLength(6)]
         public string Password { get; set; }
+        [Compare("Password")]
+        public string ConfirmPassword { get; set; }
         [Required]
         public ERoles Roles { get; set; } = ERoles.User;
         [Required]

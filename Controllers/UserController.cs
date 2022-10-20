@@ -84,5 +84,40 @@ namespace CRUDNewsApi.Controllers
             _userService.ChangeStatus(identity.Id, model);
             return Ok(new { message = "User Status updated successfully" });
         }
+
+        [Authorize(ERoles.Admin)]
+        [HttpDelete("")]
+        public IActionResult DeleteUser(int id)
+        {
+            var identity = (User)HttpContext.Items["User"];
+            _userService.Delete(identity.Id, id);
+            return NoContent();
+        }
+
+        [Authorize(ERoles.Admin)]
+        [HttpPost("")]
+        public IActionResult RegisterUser(RegisterRequest model)
+        {
+            _userService.Register(model);
+            return Created("User Created",new {message = "New User created successfully" });
+        }
+
+        [Authorize(ERoles.Admin)]
+        [HttpPut("")]
+        public IActionResult UpdateUser(UpdateRequestUser model)
+        {
+            var identity = (User)HttpContext.Items["User"];
+            _userService.Update(identity.Id, model);
+            return Ok(new { message = "User Updated Successfully" });
+        }
+
+        [Authorize(ERoles.Admin)]
+        [HttpPost("update-photo")]
+        public IActionResult UpdatePhoto([FromForm]UpdatePhotoRequest model)
+        {
+            var identity = (User)HttpContext.Items["User"];
+            _userService.UpdatePhoto(identity.Id, model);
+            return Ok(new { message = "User Photo Updated Successfully" });
+        }
     }
 }

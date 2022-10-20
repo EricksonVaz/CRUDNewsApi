@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.Net;
 using CRUDNewsApi.Entities;
+using CRUDNewsApi.Models.User;
+using System.ComponentModel.DataAnnotations;
 
 namespace CRUDNewsApi.Controllers
 {
@@ -18,17 +20,20 @@ namespace CRUDNewsApi.Controllers
     public class AuthController : ControllerBase
     {
         private IAuthService _authService;
+        private IUserService _userService;
         private IMapper _mapper;
         private readonly AppSettings _appSettings;
 
         public AuthController(
             IAuthService authService,
+            IUserService userService,
             IMapper mapper,
             IOptions<AppSettings> appSettings)
         {
             _authService = authService;
             _mapper = mapper;
             _appSettings = appSettings.Value;
+            _userService = userService;
         }
 
         [AllowAnonymous]
@@ -110,6 +115,25 @@ namespace CRUDNewsApi.Controllers
             var me = _authService.UserLogged(identity.Id);
             return Ok(me);
 
+        }
+
+        [Authorize]
+        [HttpPut("me")]
+        public IActionResult UpdateUserLogged(UpdateRequest model)
+        {
+            var identity = (User)HttpContext.Items["User"];
+            var me = _authService.UpdateUserLogged(identity.Id, model);
+            return Ok(new { message = "Info changed successfully", user = me });
+
+        }
+
+        [Authorize]
+        [HttpPut("me/photo")]
+        public IActionResult UpdatePhoto([Required] IFormFile photo)
+        {
+            var identity = (User)HttpContext.Items["User"];
+            _userService.UpdatePhoto(identity.Id, photo);
+            return Ok(new { message = "Photo Updated Successfully" });
         }
     }
 }

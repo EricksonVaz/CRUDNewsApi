@@ -20,6 +20,7 @@ namespace CRUDNewsApi.Services
         Task<object> ResendEmail(ResetPasswordRequest resetPasswordRequest);
         void ChangePassword(ResetPassword resetPassword);
         User UserLogged(int idUserLogged);
+        User UpdateUserLogged(int idUserLogged, UpdateRequest updateRequest);
     }
     public class AuthService : IAuthService
     {
@@ -154,6 +155,19 @@ namespace CRUDNewsApi.Services
         public User UserLogged(int idUserLogged)
         {
             return _context.Users.Find(idUserLogged);
+        }
+
+        public User UpdateUserLogged(int idUserLogged, UpdateRequest model)
+        {
+
+            var userFound = _context.Users.SingleOrDefault(x => x.Id == idUserLogged);
+          
+            userFound.FirstName = model.FirstName;
+            userFound.LastName = model.LastName;
+            _context.Users.Update(userFound);
+            _context.SaveChanges();
+
+            return userFound;
         }
 
         private User getUserByEmail(string email)

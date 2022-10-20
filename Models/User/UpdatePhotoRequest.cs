@@ -5,6 +5,8 @@ namespace CRUDNewsApi.Models.User
     public class UpdatePhotoRequest
     {
         [Required]
-        public string Photo { get; set; }
+        public int Id { get; set; }
+        [Required]
+        public IFormFile Photo { get; set; }
     }
 }

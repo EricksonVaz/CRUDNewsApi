@@ -3,7 +3,9 @@ using CRUDNewsApi.Entities;
 using CRUDNewsApi.Helpers;
 using CRUDNewsApi.Helpers.Exceptions;
 using CRUDNewsApi.Helpers.Pagination;
+using CRUDNewsApi.Models.Auth;
 using CRUDNewsApi.Models.User;
+using UpdateRequestUser = CRUDNewsApi.Models.User.UpdateRequestUser;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography.Xml;
 using KeyNotFoundException = CRUDNewsApi.Helpers.Exceptions.KeyNotFoundException;
@@ -16,23 +18,26 @@ namespace CRUDNewsApi.Services
         PagedList<User> GetAll(int idUserLogged, UserPaginationParams paginationParameters);
         User GetById(int idUserLogged, int id);
         void Register(RegisterRequest model);
-        void Update(int id, UpdateRequest model);
+        void Update(int id, UpdateRequestUser model);
         void UpdatePassword(int idUserLogged, UpdatePasswordRequest model);
         void ChangePassword(int id, ChangePasswordRequest model);
         void UpdatePhoto(int id, UpdatePhotoRequest model);
+        void UpdatePhoto(int id, IFormFile photo);
         void ChangeStatus(int id, UpdateStatusRequest model);
-        void Delete(int id);
+        void Delete(int idUserLogged, int id);
         User GetById(int id);
     }
     public class UserService : IUserService
     {
         private DataContext _context;
+        private readonly IUploadService _uploadService;
         private readonly IMapper _mapper;
 
-        public UserService(DataContext context, IMapper mapper)
+        public UserService(DataContext context, IMapper mapper, IUploadService uploadService)
         {
             _context = context;
             _mapper = mapper;
+            _uploadService = uploadService;
         }
         public void UpdatePassword(int idUserLogged, UpdatePasswordRequest model)
         {
@@ -67,9 +72,15 @@ namespace CRUDNewsApi.Services
             _context.SaveChanges();
         }
 
-        public void Delete(int id)
+        public void Delete(int idUserLogged, int id)
         {
-            throw new NotImplementedException();
+            if (idUserLogged == id) throw new KeyNotFoundException("action not allowed");
+
+            var userFound = getUser(id);
+            if (userFound == null) throw new KeyNotFoundException("User not Found");
+            userFound.Status = EStatus.Deleted;
+            _context.Users.Update(userFound);
+            _context.SaveChanges();
         }
 
         public PagedList<User> GetAll(int userLogged,UserPaginationParams pagination)
@@ -136,17 +147,47 @@ namespace CRUDNewsApi.Services
 
         public void Register(RegisterRequest model)
         {
-            throw new NotImplementedException();
+            if (_context.Users.Any(x => x.Email == model.Email))
+                throw new BadRequestException($"A user with {model.Email} email already exists");
+
+            // map model to new user object
+            var user = _mapper.Map<User>(model);
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
+            _context.Users.Add(user);
+            _context.SaveChanges();
         }
 
-        public void Update(int id, UpdateRequest model)
+        public void Update(int idUserLogged, UpdateRequestUser model)
         {
-            throw new NotImplementedException();
+            if (idUserLogged == model.Id) throw new KeyNotFoundException("action not allowed");
+
+            var userFound = getUser(model.Id);
+            userFound.FirstName = model.FirstName;
+            userFound.LastName = model.LastName;
+            userFound.Roles = model.Roles;
+            _context.Users.Update(userFound);
+            _context.SaveChanges();
         }
 
-        public void UpdatePhoto(int id, UpdatePhotoRequest model)
+        public void UpdatePhoto(int idUserLogged, UpdatePhotoRequest model)
         {
-            throw new NotImplementedException();
+            if (idUserLogged == model.Id) throw new KeyNotFoundException("action not allowed");
+
+            var filePathName = _uploadService.UploadImage(model.Photo);
+            var userFound = getUser(model.Id);
+            userFound.Photo = filePathName;
+            _context.Users.Update(userFound);
+            _context.SaveChanges();
+        }
+
+        public void UpdatePhoto(int idUserLogged, IFormFile photo)
+        {
+            var filePathName = _uploadService.UploadImage(photo);
+            var userFound = getUser(idUserLogged);
+            userFound.Photo = filePathName;
+            _context.Users.Update(userFound);
+            _context.SaveChanges();
         }
 
         private User getUser(int id)

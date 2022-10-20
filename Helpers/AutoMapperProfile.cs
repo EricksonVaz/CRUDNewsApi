@@ -36,6 +36,7 @@ namespace CRUDNewsApi.Helpers
                     (src, dest, prop) => mapConditionCB<UpdatePasswordRequest, User>(src, dest, prop)
                 ));
 
+
             // UpdatePhotoRequest -> User (USER)
             CreateMap<UpdatePhotoRequest, User>()
                 .ForAllMembers(x => x.Condition(
@@ -43,9 +44,9 @@ namespace CRUDNewsApi.Helpers
                 ));
 
             // UpdateRequest -> User (USER)
-            CreateMap<UpdateRequest, User>()
+            CreateMap<UpdateRequestUser, User>()
                 .ForAllMembers(x => x.Condition(
-                    (src, dest, prop) => mapConditionCB<UpdateRequest, User>(src,dest,prop)
+                    (src, dest, prop) => mapConditionCB<UpdateRequestUser, User>(src,dest,prop)
                 ));
 
             // UpdateStatusRequest -> User (USER)
