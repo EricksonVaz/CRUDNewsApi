@@ -12,9 +12,9 @@ using CRUDNewsApi.Entities;
 
 namespace CRUDNewsApi.Controllers
 {
-    [AllowAnonymous]
-    [Route("api/v1/auth")]
+
     [ApiController]
+    [Route("api/v1/auth")]
     public class AuthController : ControllerBase
     {
         private IAuthService _authService;
@@ -31,6 +31,7 @@ namespace CRUDNewsApi.Controllers
             _appSettings = appSettings.Value;
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public IActionResult Login(Login login)
         {
@@ -38,6 +39,7 @@ namespace CRUDNewsApi.Controllers
             return Ok(response);
         }
 
+        [AllowAnonymous]
         [HttpPost("signup")]
         public async Task<IActionResult> Signup(Signup signup)
         {
@@ -51,6 +53,7 @@ namespace CRUDNewsApi.Controllers
             throw new Exception("Error sending activation email, contact support to activate account");
         }
 
+        [AllowAnonymous]
         [HttpGet("activate")]
         public IActionResult ActivateAccount(string uuid)
         {
@@ -66,6 +69,7 @@ namespace CRUDNewsApi.Controllers
 
         }
 
+        [AllowAnonymous]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword(ResetPasswordRequest model)
         {
@@ -77,6 +81,7 @@ namespace CRUDNewsApi.Controllers
 
         }
 
+        [AllowAnonymous]
         [HttpPost("resend-activation-email")]
         public async Task<IActionResult> ResendEmail(ResetPasswordRequest model)
         {
@@ -88,11 +93,22 @@ namespace CRUDNewsApi.Controllers
 
         }
 
-        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        [HttpPut("reset-password")]
         public IActionResult ResetPassword(ResetPassword model)
         {
             _authService.ChangePassword(model);
             return Ok(new { message = "Password changed successfully" });
+
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public IActionResult UserLogged()
+        {
+            var identity = (User)HttpContext.Items["User"];
+            var me = _authService.UserLogged(identity.Id);
+            return Ok(me);
 
         }
     }

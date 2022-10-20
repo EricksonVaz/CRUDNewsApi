@@ -2,6 +2,7 @@
 using CRUDNewsApi.Entities;
 using CRUDNewsApi.Helpers;
 using CRUDNewsApi.Helpers.Pagination;
+using CRUDNewsApi.Models.User;
 using CRUDNewsApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -46,6 +47,42 @@ namespace CRUDNewsApi.Controllers
             //Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(metadata));
 
             return Ok(new {pagination = metadata, data = users});
+        }
+
+        [Authorize(ERoles.Admin)]
+        [HttpGet("{id}")]
+        public IActionResult GetOne([FromRoute] int id)
+        {
+            var identity = (User)HttpContext.Items["User"];
+            var user = _userService.GetById(identity.Id, id);
+            return Ok(user);
+        }
+
+        [Authorize]
+        [HttpPut("change-my-password")]
+        public IActionResult ChangePassword(ChangePasswordRequest model)
+        {
+            var identity = (User)HttpContext.Items["User"];
+            _userService.ChangePassword(identity.Id, model);
+            return Ok(new {message = "Password changed successfully" });
+        }
+
+        [Authorize(ERoles.Admin)]
+        [HttpPut("change-password")]
+        public IActionResult ChangeUserPassword(UpdatePasswordRequest model)
+        {
+            var identity = (User)HttpContext.Items["User"];
+            _userService.UpdatePassword(identity.Id, model);
+            return Ok(new { message = "Password changed successfully" });
+        }
+
+        [Authorize(ERoles.Admin)]
+        [HttpPut("status")]
+        public IActionResult UpdateStatus(UpdateStatusRequest model)
+        {
+            var identity = (User)HttpContext.Items["User"];
+            _userService.ChangeStatus(identity.Id, model);
+            return Ok(new { message = "User Status updated successfully" });
         }
     }
 }

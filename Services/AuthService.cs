@@ -19,6 +19,7 @@ namespace CRUDNewsApi.Services
         Task<object> ForgotPassword(ResetPasswordRequest resetPasswordRequest);
         Task<object> ResendEmail(ResetPasswordRequest resetPasswordRequest);
         void ChangePassword(ResetPassword resetPassword);
+        User UserLogged(int idUserLogged);
     }
     public class AuthService : IAuthService
     {
@@ -148,6 +149,11 @@ namespace CRUDNewsApi.Services
             {
                 throw new Exception(e.InnerException.Message);
             }
+        }
+
+        public User UserLogged(int idUserLogged)
+        {
+            return _context.Users.Find(idUserLogged);
         }
 
         private User getUserByEmail(string email)

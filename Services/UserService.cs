@@ -1,23 +1,28 @@
 ﻿using AutoMapper;
 using CRUDNewsApi.Entities;
 using CRUDNewsApi.Helpers;
+using CRUDNewsApi.Helpers.Exceptions;
 using CRUDNewsApi.Helpers.Pagination;
 using CRUDNewsApi.Models.User;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography.Xml;
+using KeyNotFoundException = CRUDNewsApi.Helpers.Exceptions.KeyNotFoundException;
+using NotImplementedException = CRUDNewsApi.Helpers.Exceptions.NotImplementedException;
 
 namespace CRUDNewsApi.Services
 {
     public interface IUserService
     {
         PagedList<User> GetAll(int idUserLogged, UserPaginationParams paginationParameters);
-        User GetById(int id);
+        User GetById(int idUserLogged, int id);
         void Register(RegisterRequest model);
         void Update(int id, UpdateRequest model);
-        void UpdatePassword(int id, UpdatePasswordRequest model);
+        void UpdatePassword(int idUserLogged, UpdatePasswordRequest model);
         void ChangePassword(int id, ChangePasswordRequest model);
         void UpdatePhoto(int id, UpdatePhotoRequest model);
         void ChangeStatus(int id, UpdateStatusRequest model);
         void Delete(int id);
+        User GetById(int id);
     }
     public class UserService : IUserService
     {
@@ -29,19 +34,37 @@ namespace CRUDNewsApi.Services
             _context = context;
             _mapper = mapper;
         }
-        public void UpdatePassword(int id, UpdatePasswordRequest model)
+        public void UpdatePassword(int idUserLogged, UpdatePasswordRequest model)
         {
-            throw new NotImplementedException();
+            if (idUserLogged == model.Id) throw new KeyNotFoundException("action not allowed");
+
+            var userFound = getUser(model.Id);
+            if(userFound==null) throw new KeyNotFoundException("User not Found");
+            userFound.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
+            _context.Users.Update(userFound);
+            _context.SaveChanges();
         }
 
         public void ChangePassword(int id, ChangePasswordRequest model)
         {
-            throw new NotImplementedException();
+            var myInfo = getUser(id);
+            if (!BCrypt.Net.BCrypt.Verify(model.OldPassword, myInfo.PasswordHash))
+                throw new BadRequestException("Invalid old password");
+
+            myInfo.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
+            _context.Users.Update(myInfo);
+            _context.SaveChanges();
         }
 
-        public void ChangeStatus(int id, UpdateStatusRequest model)
+        public void ChangeStatus(int idUserLogged, UpdateStatusRequest model)
         {
-            throw new NotImplementedException();
+            if (idUserLogged == model.Id) throw new KeyNotFoundException("action not allowed");
+
+            var userFound = getUser(model.Id);
+            if (userFound == null) throw new KeyNotFoundException("User not Found");
+            userFound.Status = model.status;
+            _context.Users.Update(userFound);
+            _context.SaveChanges();
         }
 
         public void Delete(int id)
@@ -51,6 +74,8 @@ namespace CRUDNewsApi.Services
 
         public PagedList<User> GetAll(int userLogged,UserPaginationParams pagination)
         {
+            var search = pagination.Search;
+
             if(pagination.Status != null && pagination.Roles != null)
                 return PagedList<User>.ToPagedList(
                     _context.Set<User>()
@@ -75,6 +100,20 @@ namespace CRUDNewsApi.Services
                     pagination.PageNumber,
                     pagination.PageSize
                 );
+            else if(search != null)
+                return PagedList<User>.ToPagedList(
+                    _context.Set<User>()
+                    .Where(x => x.Id != userLogged && (
+                            x.FirstName.ToLower().Contains(search.ToLower()) || 
+                            x.LastName.ToLower().Contains(search.ToLower()) ||
+                            x.Email.ToLower().Contains(search.ToLower())
+                        )
+                    )
+                    .OrderBy(u => u.FirstName),
+                    pagination.PageNumber,
+                    pagination.PageSize
+                );
+
             return PagedList<User>.ToPagedList(
                 _context.Set<User>()
                 .Where(x => x.Id != userLogged)
@@ -82,6 +121,12 @@ namespace CRUDNewsApi.Services
                 pagination.PageNumber,
                 pagination.PageSize
             );
+        }
+
+        public User GetById(int idUserLogged,int id)
+        {
+            var user = _context.Users.SingleOrDefault(x => x.Id == id && x.Id != idUserLogged);
+            return user;
         }
 
         public User GetById(int id)

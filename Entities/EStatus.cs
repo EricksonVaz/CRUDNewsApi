@@ -5,6 +5,7 @@
         Active,
         Inactive,
         Blocked,
-        Private
+        Private,
+        Deleted
     }
 }
